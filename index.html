@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+   
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   
+   <style>
+        
+        canvas {
+            background-color: #ccf;
+            border: 5px solid black;
+        }
+
+    </style>
+
+</head>
+
+<body onload="startGame()">  
+    <h1>Impossible Rush</h1>
+    <script>
+
+        var gamePiece;				// ist das Quadrat im Canvas
+        var gameObstacles = [];		// Variable für die herabfallenden Blöcke
+        var myScore;				// Variable für die Textausgabe
+
+
+        function startGame() {
+            gamePiece = new cubeComponent("yellow", 75, 225);						    // Fügt das Quadrat standardmäßig mit der Farbe gelb Lässt das Quadrat mit der gelben Farbe ein
+            myScore = new textComponent("20px", "Consolas", "black", 10, 25);		    // Textausgabe "SCORE" im Canvas
+            myGameArea.start();														    // lässt die Variable myGameArea aufrufen
+        }
+
+        var myGameArea = {														        // Hier wird das Canvas erstellt
+            canvas: document.createElement("canvas"),
+            start: function () {
+                this.canvas.width = 250;										        // Breite des Canvas
+                this.canvas.height = 350;										        // Höhe des Canvas
+                this.frameNo = 0;												        // Überprüft nach Framezahl
+                this.context = this.canvas.getContext("2d");
+                document.body.insertBefore(this.canvas, document.body.childNodes[2]);   // Canvas wird ins HTML eingefügt
+                this.interval = setInterval(updateGameArea, 20);						// Ruft die updateGameArea Funktion in einem spezifischen Interval auf
+            },
+            clear: function () {                                                        // Löscht den  Inhalt vom Canvas
+                this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            },
+            stop: function () {                                                         // Stoppt das aufrufen der updateGameArea Funktion
+                clearInterval(this.interval);
+            }
+        }
+
+        function updateGameArea() {		
+
+            var x, y;
+            for (i = 0; i < gameObstacles.length; i++) {
+                if (gamePiece.crashWith(gameObstacles[i])) {				                    // Abfrage ob das Geschoss mit dem Block kolidiert ist
+                    if(gamePiece.color == gameObstacles[i].color){                              // Abfrage ob die beiden Farben gleich sind
+                        gameObstacles.splice(i,1); 							                    // .splice dient dazu den Block nach der Kollision aus den Array zu den entfernen
+                        myScore.score++;                                                        // Score wird um eins erhöht
+                    }else{                                                                      // Wenn die Farben nicht zutreffen würde das Spiel gestoppt werden
+                        gameOver = new textComponent("30px", "Consolas", "black", 50, 150);		//Hier wird ein Game Over Text erstellt
+                        gameOver.text = "Game Over"	                                            // Textausgabe 
+                        gameOver.update();
+                        myGameArea.stop();			                                            // Hier wird das Spiel gestoppt.
+                        return;  					                                            // Der return dient dazu, dass die Blöcke danach nicht weitergezeichnet werden. 
+                    }
+                }
+            }
+
+            myGameArea.clear();                                                              // Das Canvas wird wieder geleert
+            myGameArea.frameNo += 1;
+            if (myGameArea.frameNo == 1 || everyintervale(40)) {			                  // Hier wird ausgegeben nach welcher Zeit bzw. Abstand der neue Block gezeichnet werden soll.			
+                randomcolor = Math.floor(Math.random() * 4);				                // Hier wird die randomcolor der blöcke generiert.
+                switch (randomcolor) {										
+                    case 0:
+                        gameObstacles.push(new component(5, 10, "red", 120, 0));  			// Hier wird der rote Block gezeichnet. Breite, Länge usw.
+                        break;
+                    case 1:
+                        gameObstacles.push(new component(5, 10, "green", 120, 0));			// Hier wird der grüne Block gezeichnet. Breite, Länge usw.
+                        break;
+                    case 2:
+                        gameObstacles.push(new component(5, 10, "yellow", 120, 0));			// Hier wird der gelbe Block gezeichnet. Breite, Länge usw.
+                        break;
+                    case 3:
+                        gameObstacles.push(new component(5, 10, "blue", 120, 0));			// Hier wird der blaue Block gezeichnet. Breite, Länge usw.
+                        break;
+                }
+            }
+
+
+            for (i = 0; i < gameObstacles.length; i++) {		// In dieser Schleife werden die Positionen des Blocks nach unten verschoben.
+                gameObstacles[i].newPos();
+                gameObstacles[i].update();
+            }
+            myScore.text = "SCORE: " + myScore.score;			// Hier wird der Text SCORE ausgegeben 
+            myScore.update();
+            gamePiece.update();
+
+        }
+
+       function textComponent(size, font, color, x, y) {
+            this.size = size;                                       // Text Größe
+            this.font = font;                                       // Schriftart
+            this.color = color;                                     // Farbe des Texts
+            this.text = " ";                                        // Der Text
+            this.score = 0;                                         // Derzeitige Score
+            this.x = x;                                             // X-Position des Textes
+            this.y = y;                                             // Y-Position des Textes
+            this.update = function () {                             // Zeichnet den Text in das Canvas
+                ctx = myGameArea.context;
+                ctx.font = this.size + " " + this.font;
+                ctx.fillStyle = this.color;
+                ctx.fillText(this.text, this.x, this.y);
+            }
+        }
+
+        function component(width, height, color, x, y) {
+            this.width = width;                                     // Breite des Objekts
+            this.height = height;                                   // Höhe des Objekts
+            this.speedY = 1;                                        // Geschwindigkeit des Objekts auf der Y-Achse
+            this.color = color;                                     // Farbe des Objekts
+            this.x = x;                                             // X-Position des Textes                 
+            this.y = y;                                             // Y-Position des Textes
+            this.update = function () {                             // Zeichnet das Objekt im Canvas
+                ctx = myGameArea.context;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+            this.newPos = function () {                             // Updated die Y-Koordinate mit der Geschwindigkeit
+                this.y += this.speedY;
+            }
+        }
+
+        function cubeComponent(color, x, y) {
+            this.x = x;                                                 // X-Position des Textes                 
+            this.y = y;                                                 // Y-Position des Textes
+            this.width = 100;                                           // Breite des Objekts
+            this.height = 100;                                          // Höhe des Objekts
+            this.color = color;                                         // Farbe des Objekts
+            this.crashWith = function (otherobj) {                      // Überprüft ob das übergebene Objekt mit ihm kollidiert
+                var myleft = this.x;
+                var myright = this.x + (this.width);
+                var mytop = this.y;
+                var mybottom = this.y + (this.height);
+                var otherleft = otherobj.x;
+                var otherright = otherobj.x + (otherobj.width);
+                var othertop = otherobj.y;
+                var otherbottom = otherobj.y + (otherobj.height);
+                var crash = true;
+                if ((mybottom < othertop) ||
+                    (mytop > otherbottom) ||
+                    (myright < otherleft) ||
+                    (myleft > otherright)) {
+                    crash = false;
+                }
+                return crash;
+            }
+            this.update = function () {                                 // Zeichnet da den Würfel mit den vier Dreiecken
+                ctx = myGameArea.context;
+                ctx.beginPath();                                        // Zeichnet erstes Dreieck mit aktiven Farbe
+                ctx.moveTo(75, 225);
+                ctx.lineTo(125, 275);
+                ctx.lineTo(175, 225);
+                ctx.closePath();
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                switch (this.color) {
+                    case "green":
+                        greenTriangle(ctx); break;                     // Zeichnet die restlichen Dreiecke in der Reihenfolge: Blau, Rot, Gelb
+                    case "blue":
+                        blueTriangle(ctx); break;                      // Zeichnet die restlichen Dreiecke in der Reihenfolge: Rot, Gelb, Grün
+                    case "red":
+                        redTriangle(ctx); break;                       // Zeichnet die restlichen Dreiecke in der Reihenfolge: Gelb, Grün, Blau
+                    case "yellow":
+                        yellowTriangle(ctx); break;                    // Zeichnet die restlichen Dreiecke in der Reihenfolge: Grün, Blau, Rot
+                }
+            }
+        }
+
+        function everyintervale(n) {                                   // Gibt alle 40 Frames true zurück sonst false
+            if ((myGameArea.frameNo / n) % 1 == 0) { return true; }
+            return false;
+        }
+
+
+        function greenTriangle(ctx) {                                  // Zeichnet die restlichen Dreiecke in der Reihenfolge: Blau, Rot, Gelb
+            ctx.beginPath();
+            ctx.moveTo(175, 225);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(175, 325);
+            ctx.closePath();
+            ctx.fillStyle = "blue";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(175, 325);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(75, 325);
+            ctx.closePath();
+            ctx.fillStyle = "red";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(75, 325);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(75, 225);
+            ctx.closePath();
+            ctx.fillStyle = "yellow";
+            ctx.fill();
+        }
+
+        function yellowTriangle(ctx) {                               // Zeichnet die restlichen Dreiecke in der Reihenfolge: Grün, Blau, Rot
+            ctx.beginPath();
+            ctx.moveTo(175, 225);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(175, 325);
+            ctx.closePath();
+            ctx.fillStyle = "green";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(175, 325);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(75, 325);
+            ctx.closePath();
+            ctx.fillStyle = "blue";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(75, 325);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(75, 225);
+            ctx.closePath();
+            ctx.fillStyle = "red";
+            ctx.fill();
+        }
+
+        function redTriangle(ctx) {                                 // Zeichnet die restlichen Dreiecke in der Reihenfolge: Gelb, Grün, Blau
+            ctx.beginPath();
+            ctx.moveTo(175, 225);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(175, 325);
+            ctx.closePath();
+            ctx.fillStyle = "yellow";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(175, 325);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(75, 325);
+            ctx.closePath();
+            ctx.fillStyle = "green";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(75, 325);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(75, 225);
+            ctx.closePath();
+            ctx.fillStyle = "blue";
+            ctx.fill();
+        }
+
+        function blueTriangle(ctx) {                            // Zeichnet die restlichen Dreiecke in der Reihenfolge: Rot, Gelb, Grün
+            ctx.beginPath();
+            ctx.moveTo(175, 225);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(175, 325);
+            ctx.closePath();
+            ctx.fillStyle = "red";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(175, 325);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(75, 325);
+            ctx.closePath();
+            ctx.fillStyle = "yellow";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(75, 325);
+            ctx.lineTo(125, 275);
+            ctx.lineTo(75, 225);
+            ctx.closePath();
+            ctx.fillStyle = "green";
+            ctx.fill();
+        }
+
+        function green() {
+            gamePiece.color = "green";                  // Setzt die Farbe im Würfel auf Grün
+        }
+        function yellow() {
+            gamePiece.color = "yellow";                 // Setzt die Farbe im Würfel auf Gelb
+        }
+        function red() {
+            gamePiece.color = "red";                    // Setzt die Farbe im Würfel auf Rot
+        } 
+		function blue() {
+            gamePiece.color = "blue";                   // Setzt die Farbe im Würfel auf Blau
+        }
+
+    </script>
+    <br />
+    <button style="background-color:		#00ff00; padding-right: 11px; padding-left:11px;" onclick="green()" >Green</button>
+    <button style="background-color:        yellow; padding-right: 10px; padding-left:10px;"onclick="yellow()">Yellow</button>
+    <button style="background-color:		#ff0000; padding-right:15px; padding-left:15px;"onclick="red()">Red</button>
+    <button style="background-color:	    #0000ff; padding-right: 18px; padding-left:15px;"onclick="blue()">Blue</button>
+
+</body>
+
+</html>
